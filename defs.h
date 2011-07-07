@@ -10,4 +10,3 @@
 #include "character.h"
 #include "timer.h"
 #include "font.h"
-

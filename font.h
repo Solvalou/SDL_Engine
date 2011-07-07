@@ -24,6 +24,8 @@ class SDL_Font
         SDL_Rect dst;
         SDL_Color textColor;
         int frameCount;
+        float fps;
+        float time;
 
         std::string s;
         std::stringstream out;

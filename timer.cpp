@@ -6,6 +6,7 @@ SDL_Timer::SDL_Timer()
     DeltaTime = 0.0;
     Framerate = 60.0;
     Limit = false;
+    TimeSum = 0.0;
 }
 
 void SDL_Timer::StartTime()
@@ -27,7 +28,7 @@ void SDL_Timer::LimitFramerate()
 
     if ((1000.0/Framerate) >= TimeSum)
     {
-       TimeSum Limit = true;
+        Limit = true;
         //TimeSum = 0;
     }
     else

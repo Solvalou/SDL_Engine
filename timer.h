@@ -8,10 +8,10 @@ class SDL_Timer
     private:
         float TimeOfLastCall;
         float Framerate;
-        float TimeSum;
 
     public:
         float DeltaTime;
+        float TimeSum;
         bool Limit;
 
         SDL_Timer();

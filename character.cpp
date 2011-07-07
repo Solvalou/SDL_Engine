@@ -1,23 +1,46 @@
 #include "character.h"
 
-SDL_Character::SDL_Character(SDL_Video *videoMain, SDL_Input *inputMain, SDL_Timer *timerMain, SDL_Surface *charSurf, SDL_Rect srcIn, SDL_Rect dstIn)
+SDL_Character::SDL_Character(SDL_Video *videoMain, SDL_Input *inputMain, SDL_Timer *timerMain, SDL_Surface *spritesheet, SDL_Rect startPosition,
+                                int stanceFrames, SDL_Rect srcStance1, SDL_Rect srcStance2, SDL_Rect srcStance3,
+                                int leftFrames, SDL_Rect srcLeft1, SDL_Rect srcLeft2, SDL_Rect srcLeft3,
+                                int rightFrames, SDL_Rect srcRight1, SDL_Rect srcRight2, SDL_Rect srcRight3)
 {
-    speed = 1;
     FrameCount = 0;
-    SetFrame();
+    numberOfFrames_Stance = stanceFrames;
+    numberOfFrames_Left = leftFrames;
+    numberOfFrames_Right = rightFrames;
+
+    frameStance[0] = srcStance1;
+    frameStance[1] = srcStance2;
+    frameStance[2] = srcStance3;
+
+    frameLeft[0] = srcLeft1;
+    frameLeft[1] = srcLeft2;
+    frameLeft[2] = srcLeft3;
+
+    frameRight[0] = srcRight1;
+    frameRight[1] = srcRight2;
+    frameRight[2] = srcRight3;
 
     x_velocity = 0.1;
     y_velocity = 0.1;
-    dstX = dstIn.x;
-    dstY = dstIn.y;
+    dstX = startPosition.x;
+    dstY = startPosition.y;
 
-    character = charSurf;
+    character = spritesheet;
     video = videoMain;
     input = inputMain;
     timer = timerMain;
 
-    src = srcIn;
-    dst = dstIn;
+    src = startPosition;
+    dst = frameStance[0];
+
+    timeSum = 0.0;
+
+    step1 = false;
+    step2 = false;
+    step3 = false;
+    step4 = false;
 }
 
 SDL_Character::~SDL_Character()
@@ -32,15 +55,19 @@ void SDL_Character::Move()
         if (dstX > 0)
         {
             // dst.x = dst.x - speed;
-            dstX = (dstX - x_velocity * (timer->DeltaTime));
+            dstX = (dstX - x_velocity * (timer->GetDeltaTime()));
+            if (input->right == false)
+            {
+                AnimateLeft();
+            }
         }
     }
 
     if (input->right == true)
     {
-        if (dstX < ((video->screen_m.w) - dst.w))
+        if (dstX < ((video->screen_m.w) - dst.w ))
         {
-            dstX = (dstX + x_velocity * (timer->DeltaTime));;
+            dstX = (dstX + x_velocity * (timer->GetDeltaTime()));;
             if (input->left == false)
             {
                 AnimateRight();
@@ -52,7 +79,6 @@ void SDL_Character::Move()
     {
         if (dstY > 0)
         {
-            dstY = dstY - speed;
         }
     }
 
@@ -60,13 +86,12 @@ void SDL_Character::Move()
     {
         if (dstY < ((video->screen_m.h) - dst.h))
         {
-            dstY = dstY + speed;
         }
     }
 
     if (!(input->up || input->down || input->left || input->right))
     {
-        Animate();
+        AnimateStance();
     }
 }
 
@@ -81,105 +106,70 @@ void SDL_Character::Draw()
 
 void SDL_Character::Animate()
 {
-    switch (FrameCount)
+    timeSum += timer->GetDeltaTime();
+    if (numberOfFrames >= 1)
     {
-        case 0:
+        if ((timeSum >= 0) && (timeSum < 10000/60))
+        {
+            printf("Step1\n");
             src = frame[0];
             dst.w = frame[0].w;
             dst.h = frame[0].h;
-            break;
+        }
 
-        case 1:
-            src = frame[1];
-            dst.w = frame[1].w;
-            dst.h = frame[1].h;
-            break;
+        if (numberOfFrames >= 2)
+        {
+            if ((timeSum >= 10000/60) && (timeSum < 20000/60))
+            {
+                printf("Step2\n");
+                src = frame[1];
+                dst.w = frame[1].w;
+                dst.h = frame[1].h;
+            }
 
-        case 2:
-            src = frame[2];
-            dst.w = frame[2].w;
-            dst.h = frame[2].h;
-            break;
-
-        case 3:
-            src = frame[3];
-            dst.w = frame[3].w;
-            dst.h = frame[3].h;
-            break;
-
-        case 4:
-            FrameCount = 0;
-            break;
+            if (numberOfFrames >= 3)
+            {
+                if ((timeSum >= 20000/60) && (timeSum < 30000/60))
+                {
+                    printf("Step3\n");
+                    src = frame[2];
+                    dst.w = frame[2].w;
+                    dst.h = frame[2].h;
+                }
+            }
+        }
     }
+
+    if (timeSum > (30000/60))
+    {
+        printf("Step4\n");
+        timeSum = 0.0;
+    }
+}
+
+void SDL_Character::AnimateStance()
+{
+    frame[0] = frameStance[0];
+    frame[1] = frameStance[1];
+    frame[2] = frameStance[2];
+    numberOfFrames = numberOfFrames_Stance;
+    Animate();
 }
 
 void SDL_Character::AnimateRight()
 {
-    switch (FrameCount)
-    {
-        case 0:
-            src = frameRight[0];
-            dst.w = frameRight[0].w;
-            dst.h = frameRight[0].h;
-            break;
-
-        case 1:
-            src = frameRight[1];
-            dst.w = frameRight[1].w;
-            dst.h = frameRight[1].h;
-            break;
-
-        case 2:
-            src = frameRight[2];
-            dst.w = frameRight[2].w;
-            dst.h = frameRight[2].h;
-            break;
-
-        case 3:
-            FrameCount = 0;
-            break;
-    }
+    frame[0] = frameRight[0];
+    frame[1] = frameRight[1];
+    frame[2] = frameRight[2];
+    numberOfFrames = numberOfFrames_Right;
+    Animate();
 }
 
 void SDL_Character::AnimateLeft()
 {
-
-}
-
-void SDL_Character::SetFrame()
-{
-    frame[0].x = 172;
-    frame[0].y = 37;
-    frame[0].w = 20;
-    frame[0].h = 24;
-
-    frame[1].x = 195;
-    frame[1].y = 39;
-    frame[1].w = 24;
-    frame[1].h = 22;
-
-    frame[2].x = 221;
-    frame[2].y = 37;
-    frame[2].w = 16;
-    frame[2].h = 24;
-
-    frame[3].x = 239;
-    frame[3].y = 39;
-    frame[3].w = 21;
-    frame[3].h = 22;
-
-    frameRight[0].x = 195;
-    frameRight[0].y = 39;
-    frameRight[0].w = 24;
-    frameRight[0].h = 22;
-
-    frameRight[1].x = 221;
-    frameRight[1].y = 37;
-    frameRight[1].w = 16;
-    frameRight[1].h = 24;
-
-    frameRight[2].x = 239;
-    frameRight[2].y = 39;
-    frameRight[2].w = 21;
-    frameRight[2].h = 22;
+    frame[0] = frameLeft[0];
+    frame[1] = frameLeft[1];
+    frame[2] = frameLeft[2];
+    numberOfFrames = numberOfFrames_Left;
+    Animate();
 }
